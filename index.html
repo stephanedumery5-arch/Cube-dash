@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cube Dash</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: linear-gradient(120deg, #1a1a1a, #333);
+      overflow: hidden;
+      font-family: sans-serif;
+      color: white;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: linear-gradient(90deg, #0ff, #008);
+      border: 3px solid #00ffff;
+    }
+    h1 {
+      text-align: center;
+      margin: 10px 0;
+      color: cyan;
+      text-shadow: 0 0 10px cyan;
+    }
+  </style>
+</head>
+<body>
+  <h1>💠 Cube Dash</h1>
+  <canvas id="game" width="800" height="400"></canvas>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    // Joueur
+    const player = {
+      x: 100,
+      y: 300,
+      size: 30,
+      vy: 0,
+      gravity: 0.8,
+      jumpPower: -13,
+      grounded: false
+    };
+
+    // Obstacles
+    const obstacles = [];
+    let frame = 0;
+    let speed = 6;
+    let score = 0;
+    let gameOver = false;
+
+    // Sons (optionnels)
+    // const jumpSound = new Audio("jump.wav");
+    // const deathSound = new Audio("death.wav");
+
+    function jump() {
+      if (player.grounded) {
+        player.vy = player.jumpPower;
+        player.grounded = false;
+        // jumpSound.play();
+      }
+    }
+
+    document.addEventListener("keydown", e => {
+      if (e.code === "Space" || e.code === "ArrowUp") jump();
+      if (gameOver && e.code === "Enter") restartGame();
+    });
+
+    function restartGame() {
+      obstacles.length = 0;
+      frame = 0;
+      score = 0;
+      player.y = 300;
+      player.vy = 0;
+      speed = 6;
+      gameOver = false;
+      animate();
+    }
+
+    function createObstacle() {
+      const height = 40 + Math.random() * 40;
+      obstacles.push({
+        x: canvas.width,
+        y: canvas.height - height - 20,
+        width: 20,
+        height: height
+      });
+    }
+
+    function update() {
+      if (gameOver) return;
+
+      frame++;
+      score++;
+
+      // Gravité
+      player.vy += player.gravity;
+      player.y += player.vy;
+
+      // Sol
+      if (player.y + player.size >= canvas.height - 20) {
+        player.y = canvas.height - 20 - player.size;
+        player.vy = 0;
+        player.grounded = true;
+      }
+
+      // Obstacles
+      if (frame % 90 === 0) createObstacle();
+      obstacles.forEach((o, i) => {
+        o.x -= speed;
+        if (o.x + o.width < 0) obstacles.splice(i, 1);
+      });
+
+      // Collision
+      for (const o of obstacles) {
+        if (
+          player.x < o.x + o.width &&
+          player.x + player.size > o.x &&
+          player.y + player.size > o.y
+        ) {
+          gameOver = true;
+          // deathSound.play();
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Sol
+      ctx.fillStyle = "#0ff";
+      ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+
+      // Joueur
+      ctx.fillStyle = "#ff0080";
+      ctx.fillRect(player.x, player.y, player.size, player.size);
+
+      // Obstacles
+      ctx.fillStyle = "#00ffff";
+      obstacles.forEach(o => {
+        ctx.fillRect(o.x, o.y, o.width, o.height);
+      });
+
+      // Score
+      ctx.font = "20px Arial";
+      ctx.fillText("Score : " + score, 20, 30);
+
+      if (gameOver) {
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        ctx.font = "40px Arial";
+        ctx.fillText("💀 GAME OVER 💀", 250, 180);
+        ctx.font = "20px Arial";
+        ctx.fillText("Appuie sur Entrée pour rejouer", 250, 220);
+      }
+    }
+
+    function animate() {
+      update();
+      draw();
+      if (!gameOver) requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
